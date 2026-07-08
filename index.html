@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Metronom mit Footsteps</title>
+  <style>
+    :root {
+      --bg1: #07111f;
+      --bg2: #101827;
+      --card: rgba(17, 24, 39, 0.86);
+      --card-border: rgba(255,255,255,0.12);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-strong: #0ea5e9;
+      --accent-warm: #fb923c;
+      --danger: #f97316;
+      --track: rgba(255,255,255,0.15);
+      --shadow: rgba(0,0,0,0.38);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(56,189,248,0.18), transparent 30%),
+        radial-gradient(circle at 85% 20%, rgba(251,146,60,0.12), transparent 32%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+    }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(14px, 3vw, 28px);
+    }
+
+    .app {
+      width: min(100%, 720px);
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: clamp(22px, 4vw, 34px);
+      box-shadow: 0 28px 80px var(--shadow);
+      backdrop-filter: blur(18px);
+      overflow: hidden;
+    }
+
+    header {
+      padding: clamp(22px, 5vw, 36px) clamp(20px, 5vw, 38px) 16px;
+      text-align: center;
+    }
+
+    .eyebrow {
+      color: var(--accent);
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      font-size: 0.72rem;
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 8vw, 4.2rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+    }
+
+    .sub {
+      margin: 14px auto 0;
+      color: var(--muted);
+      max-width: 46ch;
+      line-height: 1.5;
+      font-size: clamp(0.95rem, 2.4vw, 1.05rem);
+    }
+
+    .panel {
+      padding: 8px clamp(18px, 5vw, 38px) clamp(20px, 5vw, 38px);
+    }
+
+    .bpm-readout {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 10px;
+      margin: 8px 0 18px;
+    }
+
+    #bpmNumber {
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(4rem, 16vw, 8rem);
+      line-height: 0.9;
+      font-weight: 900;
+      letter-spacing: -0.08em;
+      color: white;
+      text-shadow: 0 0 36px rgba(56,189,248,0.25);
+    }
+
+    .bpm-label {
+      color: var(--accent);
+      font-weight: 900;
+      font-size: clamp(1rem, 4vw, 1.5rem);
+    }
+
+    .controls {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .row.two {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media (max-width: 520px) {
+      .row.two { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .value-pill {
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    select, button {
+      min-height: 48px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      color: var(--text);
+      font: inherit;
+      font-weight: 800;
+      padding: 0 14px;
+    }
+
+    select {
+      cursor: pointer;
+      color-scheme: dark;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 460px) {
+      .buttons { grid-template-columns: 1fr; }
+    }
+
+    button {
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    button:active { transform: translateY(1px) scale(0.99); }
+
+    #toggle {
+      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      color: #00111f;
+      box-shadow: 0 14px 34px rgba(14,165,233,0.28);
+      font-size: 1.05rem;
+    }
+
+    #toggle.running {
+      background: linear-gradient(135deg, var(--danger), var(--accent-warm));
+      color: white;
+      box-shadow: 0 14px 34px rgba(249,115,22,0.28);
+    }
+
+    #tap {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .stage {
+      position: relative;
+      height: clamp(300px, 52vw, 430px);
+      border-radius: 28px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.11);
+      background:
+        linear-gradient(90deg, transparent 49.7%, rgba(255,255,255,0.1) 49.7%, rgba(255,255,255,0.1) 50.3%, transparent 50.3%),
+        radial-gradient(circle at 50% 20%, rgba(56,189,248,0.12), transparent 34%),
+        linear-gradient(180deg, rgba(15,23,42,0.35), rgba(2,6,23,0.86));
+      box-shadow: inset 0 0 80px rgba(0,0,0,0.28);
+    }
+
+    .beat-ring {
+      position: absolute;
+      inset: 50% auto auto 50%;
+      width: 94px;
+      height: 94px;
+      border-radius: 999px;
+      border: 2px solid rgba(56,189,248,0.38);
+      transform: translate(-50%, -50%) scale(0.8);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .beat-ring.active {
+      animation: ring 420ms ease-out;
+    }
+
+    @keyframes ring {
+      0% { opacity: 0.9; transform: translate(-50%, -50%) scale(0.45); }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(2.5); }
+    }
+
+    .lane-label {
+      position: absolute;
+      top: 16px;
+      color: rgba(255,255,255,0.42);
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .lane-label.left { left: 18%; }
+    .lane-label.right { right: 18%; }
+
+    .footprint {
+      position: absolute;
+      width: clamp(54px, 11vw, 78px);
+      height: clamp(92px, 18vw, 128px);
+      opacity: 0;
+      transform-origin: center;
+      filter: drop-shadow(0 12px 14px rgba(0,0,0,0.38));
+      pointer-events: none;
+    }
+
+    .footprint svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .footprint.left { left: 31%; transform: translate(-50%, -50%) rotate(-10deg); }
+    .footprint.right { left: 69%; transform: translate(-50%, -50%) rotate(10deg); }
+
+    .footprint.step {
+      animation: footfall var(--step-duration, 720ms) cubic-bezier(.2,.8,.2,1) forwards;
+    }
+
+    @keyframes footfall {
+      0% {
+        top: -18%;
+        opacity: 0;
+        scale: 0.72;
+      }
+      22% {
+        opacity: 0.92;
+        scale: 1.1;
+      }
+      50% {
+        opacity: 0.62;
+        scale: 1;
+      }
+      100% {
+        top: 112%;
+        opacity: 0;
+        scale: 0.86;
+      }
+    }
+
+    .count {
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      min-width: 54px;
+      height: 54px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.12);
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .count.flash {
+      animation: flash 180ms ease-out;
+    }
+
+    @keyframes flash {
+      0% { transform: translateX(-50%) scale(1.22); background: rgba(56,189,248,0.24); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-top: 14px;
+      line-height: 1.4;
+    }
+
+    @media (max-width: 520px) {
+      .footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <div class="eyebrow">Google Sites Embed</div>
+      <h1>Metronom</h1>
+      <p class="sub">Responsives Metronom mit hochwertigen synthetischen Click-Sounds, Lautstärke-Regler und animierten Fußschritten aus der Draufsicht.</p>
+    </header>
+
+    <section class="panel">
+      <div class="bpm-readout">
+        <div id="bpmNumber">100</div>
+        <div class="bpm-label">BPM</div>
+      </div>
+
+      <div class="controls">
+        <div class="row">
+          <label for="bpm">
+            Tempo
+            <span class="value-pill"><span id="bpmSmall">100</span> BPM</span>
+          </label>
+          <input id="bpm" type="range" min="30" max="240" value="100" />
+        </div>
+
+        <div class="row">
+          <label for="volume">
+            Volume
+            <span class="value-pill"><span id="volumeValue">75</span>%</span>
+          </label>
+          <input id="volume" type="range" min="0" max="100" value="75" />
+        </div>
+
+        <div class="row two">
+          <div>
+            <label for="meter">Takt <span class="value-pill" id="meterLabel">4/4</span></label>
+            <select id="meter">
+              <option value="2">2/4</option>
+              <option value="3">3/4</option>
+              <option value="4" selected>4/4</option>
+              <option value="5">5/4</option>
+              <option value="6">6/8</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="sound">Click Sound <span class="value-pill">HQ</span></label>
+            <select id="sound">
+              <option value="wood" selected>Wood Block</option>
+              <option value="clave">Clave</option>
+              <option value="soft">Soft Click</option>
+              <option value="studio">Studio Tick</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="buttons">
+          <button id="toggle">Start</button>
+          <button id="tap">Tap Tempo</button>
+        </div>
+      </div>
+
+      <div class="stage" aria-label="Animierte Fußschritte">
+        <div class="lane-label left">Left</div>
+        <div class="lane-label right">Right</div>
+        <div id="ring" class="beat-ring"></div>
+        <div id="footLayer"></div>
+        <div id="count" class="count">1</div>
+      </div>
+
+      <div class="footer">
+        <span>Audio startet nach dem ersten Klick, damit Browser und Google Sites die Wiedergabe erlauben.</span>
+        <span>Eine Datei: HTML + CSS + JS, keine externen Libraries.</span>
+      </div>
+    </section>
+  </main>
+
+  <template id="footTemplate">
+    <div class="footprint">
+      <svg viewBox="0 0 80 140" aria-hidden="true">
+        <defs>
+          <linearGradient id="soleGradient" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#f8fafc"/>
+            <stop offset="45%" stop-color="#cbd5e1"/>
+            <stop offset="100%" stop-color="#64748b"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="40" cy="70" rx="27" ry="47" fill="url(#soleGradient)" opacity="0.92"/>
+        <circle cx="23" cy="20" r="8" fill="#e2e8f0" opacity="0.95"/>
+        <circle cx="34" cy="12" r="7" fill="#f1f5f9" opacity="0.98"/>
+        <circle cx="45" cy="12" r="6.5" fill="#e2e8f0" opacity="0.95"/>
+        <circle cx="56" cy="18" r="6" fill="#cbd5e1" opacity="0.95"/>
+        <circle cx="63" cy="29" r="5.5" fill="#94a3b8" opacity="0.95"/>
+        <path d="M23 74 C30 88, 50 88, 57 74" fill="none" stroke="#334155" stroke-width="4" opacity="0.25" stroke-linecap="round"/>
+        <path d="M24 93 C32 105, 48 105, 56 93" fill="none" stroke="#334155" stroke-width="4" opacity="0.22" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </template>
+
+  <script>
+    const bpmInput = document.getElementById("bpm");
+    const volumeInput = document.getElementById("volume");
+    const meterInput = document.getElementById("meter");
+    const soundInput = document.getElementById("sound");
+    const bpmNumber = document.getElementById("bpmNumber");
+    const bpmSmall = document.getElementById("bpmSmall");
+    const volumeValue = document.getElementById("volumeValue");
+    const meterLabel = document.getElementById("meterLabel");
+    const toggle = document.getElementById("toggle");
+    const tap = document.getElementById("tap");
+    const ring = document.getElementById("ring");
+    const count = document.getElementById("count");
+    const footLayer = document.getElementById("footLayer");
+    const footTemplate = document.getElementById("footTemplate");
+
+    let audioCtx;
+    let masterGain;
+    let timer = null;
+    let running = false;
+    let bpm = Number(bpmInput.value);
+    let beat = 0;
+    let tapTimes = [];
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = Number(volumeInput.value) / 100;
+        masterGain.connect(audioCtx.destination);
+      }
+      if (audioCtx.state === "suspended") audioCtx.resume();
+    }
+
+    function envelopeGain(startGain, attack, decay) {
+      const gain = audioCtx.createGain();
+      const now = audioCtx.currentTime;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(Math.max(startGain, 0.0001), now + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + attack + decay);
+      return gain;
+    }
+
+    function addNoiseBuffer(duration) {
+      const sampleRate = audioCtx.sampleRate;
+      const length = sampleRate * duration;
+      const buffer = audioCtx.createBuffer(1, length, sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < length; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.2);
+      }
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      return source;
+    }
+
+    function playClick(isAccent) {
+      initAudio();
+
+      const now = audioCtx.currentTime;
+      const type = soundInput.value;
+      const out = audioCtx.createGain();
+      out.gain.value = isAccent ? 1 : 0.72;
+      out.connect(masterGain);
+
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = isAccent ? 2600 : 1900;
+      filter.Q.value = type === "soft" ? 2.2 : 5.5;
+      filter.connect(out);
+
+      const noise = addNoiseBuffer(type === "soft" ? 0.035 : 0.022);
+      const noiseGain = envelopeGain(type === "soft" ? 0.18 : 0.26, 0.001, type === "soft" ? 0.055 : 0.026);
+      noise.connect(noiseGain);
+      noiseGain.connect(filter);
+      noise.start(now);
+      noise.stop(now + 0.08);
+
+      const osc = audioCtx.createOscillator();
+      const oscGain = envelopeGain(isAccent ? 0.28 : 0.18, 0.001, type === "studio" ? 0.035 : 0.055);
+
+      if (type === "wood") {
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(isAccent ? 1220 : 880, now);
+        osc.frequency.exponentialRampToValueAtTime(isAccent ? 760 : 580, now + 0.045);
+      } else if (type === "clave") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(isAccent ? 1760 : 1320, now);
+        osc.frequency.exponentialRampToValueAtTime(isAccent ? 1180 : 920, now + 0.038);
+      } else if (type === "soft") {
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(isAccent ? 960 : 720, now);
+      } else {
+        osc.type = "square";
+        osc.frequency.setValueAtTime(isAccent ? 1450 : 1050, now);
+        osc.frequency.exponentialRampToValueAtTime(isAccent ? 980 : 780, now + 0.026);
+      }
+
+      osc.connect(oscGain);
+      oscGain.connect(out);
+      osc.start(now);
+      osc.stop(now + 0.09);
+    }
+
+    function intervalMs() {
+      return 60000 / bpm;
+    }
+
+    function setStepDuration() {
+      document.documentElement.style.setProperty("--step-duration", Math.max(360, intervalMs() * 1.42) + "ms");
+    }
+
+    function animateFoot(isLeft, isAccent) {
+      const node = footTemplate.content.firstElementChild.cloneNode(true);
+      node.classList.add(isLeft ? "left" : "right");
+      node.style.top = "-18%";
+      node.style.opacity = "0";
+      if (isAccent) node.style.filter = "drop-shadow(0 0 18px rgba(56,189,248,0.56)) drop-shadow(0 12px 14px rgba(0,0,0,0.38))";
+      footLayer.appendChild(node);
+      requestAnimationFrame(() => node.classList.add("step"));
+      setTimeout(() => node.remove(), Math.max(700, intervalMs() * 1.55));
+    }
+
+    function flashVisuals(displayBeat, isAccent) {
+      count.textContent = displayBeat;
+      count.classList.remove("flash");
+      ring.classList.remove("active");
+      void count.offsetWidth;
+      count.classList.add("flash");
+      ring.classList.add("active");
+      count.style.color = isAccent ? "var(--accent-warm)" : "var(--accent)";
+    }
+
+    function tick() {
+      const beatsPerBar = Number(meterInput.value);
+      const displayBeat = (beat % beatsPerBar) + 1;
+      const isAccent = displayBeat === 1;
+      const isLeft = beat % 2 === 0;
+
+      playClick(isAccent);
+      animateFoot(isLeft, isAccent);
+      flashVisuals(displayBeat, isAccent);
+
+      beat++;
+    }
+
+    function start() {
+      initAudio();
+      running = true;
+      beat = 0;
+      setStepDuration();
+      toggle.textContent = "Stop";
+      toggle.classList.add("running");
+      tick();
+      timer = setInterval(tick, intervalMs());
+    }
+
+    function stop() {
+      running = false;
+      clearInterval(timer);
+      timer = null;
+      toggle.textContent = "Start";
+      toggle.classList.remove("running");
+    }
+
+    function restartTimer() {
+      setStepDuration();
+      if (!running) return;
+      clearInterval(timer);
+      timer = setInterval(tick, intervalMs());
+    }
+
+    function updateBpm(value) {
+      bpm = Math.round(Number(value));
+      bpmNumber.textContent = bpm;
+      bpmSmall.textContent = bpm;
+      bpmInput.value = bpm;
+      restartTimer();
+    }
+
+    bpmInput.addEventListener("input", e => updateBpm(e.target.value));
+
+    volumeInput.addEventListener("input", e => {
+      const value = Number(e.target.value);
+      volumeValue.textContent = value;
+      if (masterGain) masterGain.gain.value = value / 100;
+    });
+
+    meterInput.addEventListener("change", () => {
+      meterLabel.textContent = meterInput.value === "6" ? "6/8" : `${meterInput.value}/4`;
+      beat = 0;
+    });
+
+    soundInput.addEventListener("change", () => {
+      initAudio();
+      playClick(true);
+    });
+
+    toggle.addEventListener("click", () => {
+      running ? stop() : start();
+    });
+
+    tap.addEventListener("click", () => {
+      initAudio();
+      const now = performance.now();
+      tapTimes = tapTimes.filter(t => now - t < 2400);
+      tapTimes.push(now);
+
+      if (tapTimes.length >= 2) {
+        const intervals = [];
+        for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
+        const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        const tappedBpm = Math.min(240, Math.max(30, Math.round(60000 / avg)));
+        updateBpm(tappedBpm);
+      }
+
+      playClick(true);
+      flashVisuals("TAP", true);
+    });
+
+    setStepDuration();
+  </script>
+</body>
+</html>
