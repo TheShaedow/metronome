@@ -338,9 +338,7 @@
 <body>
   <main class="app">
     <header>
-      <div class="eyebrow">Google Sites Embed</div>
       <h1>Metronom</h1>
-      <p class="sub">Responsives Metronom mit hochwertigen synthetischen Click-Sounds, Lautstärke-Regler und animierten Fußschritten aus der Draufsicht.</p>
     </header>
 
     <section class="panel">
@@ -403,10 +401,6 @@
         <div id="count" class="count">1</div>
       </div>
 
-      <div class="footer">
-        <span>Audio startet nach dem ersten Klick, damit Browser und Google Sites die Wiedergabe erlauben.</span>
-        <span>Eine Datei: HTML + CSS + JS, keine externen Libraries.</span>
-      </div>
     </section>
   </main>
 
@@ -582,7 +576,25 @@
       initAudio();
       running = true;
       beat = 0;
-      setStepDuration();
+  
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        const active = document.activeElement;
+        const isTyping =
+          active &&
+          (active.tagName === "INPUT" ||
+           active.tagName === "SELECT" ||
+           active.tagName === "TEXTAREA" ||
+           active.isContentEditable);
+
+        if (!isTyping) {
+          e.preventDefault();
+          tap.click();
+        }
+      }
+    });
+
+    setStepDuration();
       toggle.textContent = "Stop";
       toggle.classList.add("running");
       tick();
@@ -598,7 +610,25 @@
     }
 
     function restartTimer() {
-      setStepDuration();
+  
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        const active = document.activeElement;
+        const isTyping =
+          active &&
+          (active.tagName === "INPUT" ||
+           active.tagName === "SELECT" ||
+           active.tagName === "TEXTAREA" ||
+           active.isContentEditable);
+
+        if (!isTyping) {
+          e.preventDefault();
+          tap.click();
+        }
+      }
+    });
+
+    setStepDuration();
       if (!running) return;
       clearInterval(timer);
       timer = setInterval(tick, intervalMs());
@@ -650,6 +680,24 @@
 
       playClick(true);
       flashVisuals("TAP", true);
+    });
+
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") {
+        const active = document.activeElement;
+        const isTyping =
+          active &&
+          (active.tagName === "INPUT" ||
+           active.tagName === "SELECT" ||
+           active.tagName === "TEXTAREA" ||
+           active.isContentEditable);
+
+        if (!isTyping) {
+          e.preventDefault();
+          tap.click();
+        }
+      }
     });
 
     setStepDuration();
