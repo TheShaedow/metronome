@@ -578,21 +578,22 @@
       beat = 0;
   
     document.addEventListener("keydown", (e) => {
-      if (e.code === "Space") {
-        const active = document.activeElement;
-        const isTyping =
-          active &&
-          (active.tagName === "INPUT" ||
-           active.tagName === "SELECT" ||
-           active.tagName === "TEXTAREA" ||
-           active.isContentEditable);
+      if (e.code !== "Space" || e.repeat) return;
 
-        if (!isTyping) {
-          e.preventDefault();
-          tap.click();
-        }
-      }
-    });
+      const active = document.activeElement;
+      const isTyping =
+        active &&
+        (active.tagName === "INPUT" ||
+         active.tagName === "SELECT" ||
+         active.tagName === "TEXTAREA" ||
+         active.isContentEditable);
+
+      if (isTyping) return;
+
+      e.preventDefault();
+      if (active && typeof active.blur === "function") active.blur();
+      handleTapTempo();
+    }, { capture: true });
 
     setStepDuration();
       toggle.textContent = "Stop";
@@ -612,21 +613,22 @@
     function restartTimer() {
   
     document.addEventListener("keydown", (e) => {
-      if (e.code === "Space") {
-        const active = document.activeElement;
-        const isTyping =
-          active &&
-          (active.tagName === "INPUT" ||
-           active.tagName === "SELECT" ||
-           active.tagName === "TEXTAREA" ||
-           active.isContentEditable);
+      if (e.code !== "Space" || e.repeat) return;
 
-        if (!isTyping) {
-          e.preventDefault();
-          tap.click();
-        }
-      }
-    });
+      const active = document.activeElement;
+      const isTyping =
+        active &&
+        (active.tagName === "INPUT" ||
+         active.tagName === "SELECT" ||
+         active.tagName === "TEXTAREA" ||
+         active.isContentEditable);
+
+      if (isTyping) return;
+
+      e.preventDefault();
+      if (active && typeof active.blur === "function") active.blur();
+      handleTapTempo();
+    }, { capture: true });
 
     setStepDuration();
       if (!running) return;
@@ -664,7 +666,7 @@
       running ? stop() : start();
     });
 
-    tap.addEventListener("click", () => {
+    function handleTapTempo() {
       initAudio();
       const now = performance.now();
       tapTimes = tapTimes.filter(t => now - t < 2400);
@@ -680,25 +682,28 @@
 
       playClick(true);
       flashVisuals("TAP", true);
-    });
+    }
+
+    tap.addEventListener("click", handleTapTempo);
 
 
     document.addEventListener("keydown", (e) => {
-      if (e.code === "Space") {
-        const active = document.activeElement;
-        const isTyping =
-          active &&
-          (active.tagName === "INPUT" ||
-           active.tagName === "SELECT" ||
-           active.tagName === "TEXTAREA" ||
-           active.isContentEditable);
+      if (e.code !== "Space" || e.repeat) return;
 
-        if (!isTyping) {
-          e.preventDefault();
-          tap.click();
-        }
-      }
-    });
+      const active = document.activeElement;
+      const isTyping =
+        active &&
+        (active.tagName === "INPUT" ||
+         active.tagName === "SELECT" ||
+         active.tagName === "TEXTAREA" ||
+         active.isContentEditable);
+
+      if (isTyping) return;
+
+      e.preventDefault();
+      if (active && typeof active.blur === "function") active.blur();
+      handleTapTempo();
+    }, { capture: true });
 
     setStepDuration();
   </script>
