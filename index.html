@@ -578,7 +578,14 @@
       beat = 0;
   
     document.addEventListener("keydown", (e) => {
-      if (e.code !== "Space" || e.repeat) return;
+      if (e.code !== "Space") return;
+
+      // Stop the browser from pressing the focused button or scrolling the page.
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (e.repeat) return;
 
       const active = document.activeElement;
       const isTyping =
@@ -590,7 +597,6 @@
 
       if (isTyping) return;
 
-      e.preventDefault();
       if (active && typeof active.blur === "function") active.blur();
       handleTapTempo();
     }, { capture: true });
@@ -613,7 +619,14 @@
     function restartTimer() {
   
     document.addEventListener("keydown", (e) => {
-      if (e.code !== "Space" || e.repeat) return;
+      if (e.code !== "Space") return;
+
+      // Stop the browser from pressing the focused button or scrolling the page.
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (e.repeat) return;
 
       const active = document.activeElement;
       const isTyping =
@@ -625,7 +638,6 @@
 
       if (isTyping) return;
 
-      e.preventDefault();
       if (active && typeof active.blur === "function") active.blur();
       handleTapTempo();
     }, { capture: true });
@@ -666,29 +678,65 @@
       running ? stop() : start();
     });
 
+    let lastTapEventTime = 0;
+
     function handleTapTempo() {
       initAudio();
+
       const now = performance.now();
-      tapTimes = tapTimes.filter(t => now - t < 2400);
+
+      // Prevent double triggers from keyboard focus, iframe/browser feedback,
+      // or keydown+native-click combinations.
+      if (now - lastTapEventTime < 250) return;
+      lastTapEventTime = now;
+
+      // If the previous tap is too old, begin a fresh tempo sample.
+      if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2200) {
+        tapTimes = [];
+      }
+
       tapTimes.push(now);
+
+      // Keep only the most recent taps for a stable average.
+      if (tapTimes.length > 6) {
+        tapTimes = tapTimes.slice(-6);
+      }
 
       if (tapTimes.length >= 2) {
         const intervals = [];
-        for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
-        const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-        const tappedBpm = Math.min(240, Math.max(30, Math.round(60000 / avg)));
-        updateBpm(tappedBpm);
+        for (let i = 1; i < tapTimes.length; i++) {
+          const diff = tapTimes[i] - tapTimes[i - 1];
+
+          // Ignore impossible accidental double impulses.
+          if (diff >= 250 && diff <= 2200) intervals.push(diff);
+        }
+
+        if (intervals.length) {
+          const avg = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+          const tappedBpm = Math.min(240, Math.max(30, Math.round(60000 / avg)));
+          updateBpm(tappedBpm);
+        }
       }
 
       playClick(true);
       flashVisuals("TAP", true);
     }
 
-    tap.addEventListener("click", handleTapTempo);
+    tap.addEventListener("click", (e) => {
+      e.preventDefault();
+      handleTapTempo();
+    });
 
 
     document.addEventListener("keydown", (e) => {
-      if (e.code !== "Space" || e.repeat) return;
+      if (e.code !== "Space") return;
+
+      // Stop the browser from pressing the focused button or scrolling the page.
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (e.repeat) return;
 
       const active = document.activeElement;
       const isTyping =
@@ -700,7 +748,6 @@
 
       if (isTyping) return;
 
-      e.preventDefault();
       if (active && typeof active.blur === "function") active.blur();
       handleTapTempo();
     }, { capture: true });
