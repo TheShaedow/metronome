@@ -368,6 +368,7 @@
           <div>
             <label for="meter">Takt <span class="value-pill" id="meterLabel">4/4</span></label>
             <select id="meter">
+              <option value="none">None</option>
               <option value="2">2/4</option>
               <option value="3">3/4</option>
               <option value="4" selected>4/4</option>
@@ -560,9 +561,10 @@
     }
 
     function tick() {
-      const beatsPerBar = Number(meterInput.value);
-      const displayBeat = (beat % beatsPerBar) + 1;
-      const isAccent = displayBeat === 1;
+      const hasMeter = meterInput.value !== "none";
+      const beatsPerBar = hasMeter ? Number(meterInput.value) : 0;
+      const displayBeat = hasMeter ? (beat % beatsPerBar) + 1 : "–";
+      const isAccent = hasMeter && displayBeat === 1;
       const isLeft = beat % 2 === 0;
 
       playClick(isAccent);
@@ -665,13 +667,17 @@
     });
 
     meterInput.addEventListener("change", () => {
-      meterLabel.textContent = meterInput.value === "6" ? "6/8" : `${meterInput.value}/4`;
+      meterLabel.textContent = meterInput.value === "none"
+        ? "None"
+        : meterInput.value === "6"
+          ? "6/8"
+          : `${meterInput.value}/4`;
       beat = 0;
     });
 
     soundInput.addEventListener("change", () => {
       initAudio();
-      playClick(true);
+      playClick(meterInput.value !== "none");
     });
 
     toggle.addEventListener("click", () => {
