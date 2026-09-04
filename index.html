@@ -445,6 +445,8 @@
 
     let audioCtx;
     let masterGain;
+    let limiter;
+    const OUTPUT_BOOST = 2.5;
     let timer = null;
     let running = false;
     let bpm = Number(bpmInput.value);
@@ -455,8 +457,15 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = Number(volumeInput.value) / 100;
-        masterGain.connect(audioCtx.destination);
+        limiter = audioCtx.createDynamicsCompressor();
+        limiter.threshold.value = -3;
+        limiter.knee.value = 0;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.1;
+        masterGain.gain.value = (Number(volumeInput.value) / 100) * OUTPUT_BOOST;
+        masterGain.connect(limiter);
+        limiter.connect(audioCtx.destination);
       }
       if (audioCtx.state === "suspended") audioCtx.resume();
     }
@@ -663,7 +672,7 @@
     volumeInput.addEventListener("input", e => {
       const value = Number(e.target.value);
       volumeValue.textContent = value;
-      if (masterGain) masterGain.gain.value = value / 100;
+      if (masterGain) masterGain.gain.value = (value / 100) * OUTPUT_BOOST;
     });
 
     meterInput.addEventListener("change", () => {
