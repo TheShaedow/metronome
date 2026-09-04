@@ -446,7 +446,7 @@
     let audioCtx;
     let masterGain;
     let limiter;
-    const OUTPUT_BOOST = 2.5;
+    const OUTPUT_BOOST = 4;
     let timer = null;
     let running = false;
     let bpm = Number(bpmInput.value);
@@ -458,7 +458,7 @@
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
         limiter = audioCtx.createDynamicsCompressor();
-        limiter.threshold.value = -3;
+        limiter.threshold.value = -1;
         limiter.knee.value = 0;
         limiter.ratio.value = 20;
         limiter.attack.value = 0.003;
@@ -498,7 +498,8 @@
       const now = audioCtx.currentTime;
       const type = soundInput.value;
       const out = audioCtx.createGain();
-      out.gain.value = isAccent ? 1 : 0.72;
+      // Keep accents distinguishable by pitch instead of a large volume jump.
+      out.gain.value = isAccent ? 0.9 : 1;
       out.connect(masterGain);
 
       const filter = audioCtx.createBiquadFilter();
@@ -515,7 +516,7 @@
       noise.stop(now + 0.08);
 
       const osc = audioCtx.createOscillator();
-      const oscGain = envelopeGain(isAccent ? 0.28 : 0.18, 0.001, type === "studio" ? 0.035 : 0.055);
+      const oscGain = envelopeGain(0.3, 0.001, type === "studio" ? 0.035 : 0.055);
 
       if (type === "wood") {
         osc.type = "triangle";
