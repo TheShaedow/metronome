@@ -445,7 +445,6 @@
 
     let audioCtx;
     let masterGain;
-    let limiter;
     const OUTPUT_BOOST = 4;
     let timer = null;
     let running = false;
@@ -457,15 +456,8 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        limiter = audioCtx.createDynamicsCompressor();
-        limiter.threshold.value = -1;
-        limiter.knee.value = 0;
-        limiter.ratio.value = 20;
-        limiter.attack.value = 0.003;
-        limiter.release.value = 0.1;
         masterGain.gain.value = (Number(volumeInput.value) / 100) * OUTPUT_BOOST;
-        masterGain.connect(limiter);
-        limiter.connect(audioCtx.destination);
+        masterGain.connect(audioCtx.destination);
       }
       if (audioCtx.state === "suspended") audioCtx.resume();
     }
