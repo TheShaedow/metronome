@@ -445,6 +445,7 @@
 
     let audioCtx;
     let masterGain;
+    const OUTPUT_BOOST = 4;
     let timer = null;
     let running = false;
     let bpm = Number(bpmInput.value);
@@ -455,7 +456,7 @@
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         masterGain = audioCtx.createGain();
-        masterGain.gain.value = Number(volumeInput.value) / 100;
+        masterGain.gain.value = (Number(volumeInput.value) / 100) * OUTPUT_BOOST;
         masterGain.connect(audioCtx.destination);
       }
       if (audioCtx.state === "suspended") audioCtx.resume();
@@ -489,7 +490,8 @@
       const now = audioCtx.currentTime;
       const type = soundInput.value;
       const out = audioCtx.createGain();
-      out.gain.value = isAccent ? 1 : 0.72;
+      // Keep accents distinguishable by pitch instead of a large volume jump.
+      out.gain.value = isAccent ? 0.9 : 1;
       out.connect(masterGain);
 
       const filter = audioCtx.createBiquadFilter();
@@ -506,7 +508,7 @@
       noise.stop(now + 0.08);
 
       const osc = audioCtx.createOscillator();
-      const oscGain = envelopeGain(isAccent ? 0.28 : 0.18, 0.001, type === "studio" ? 0.035 : 0.055);
+      const oscGain = envelopeGain(0.3, 0.001, type === "studio" ? 0.035 : 0.055);
 
       if (type === "wood") {
         osc.type = "triangle";
@@ -663,7 +665,7 @@
     volumeInput.addEventListener("input", e => {
       const value = Number(e.target.value);
       volumeValue.textContent = value;
-      if (masterGain) masterGain.gain.value = value / 100;
+      if (masterGain) masterGain.gain.value = (value / 100) * OUTPUT_BOOST;
     });
 
     meterInput.addEventListener("change", () => {
